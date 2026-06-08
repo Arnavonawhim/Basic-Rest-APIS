@@ -6,12 +6,18 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample, OpenApiTypes
+from rest_framework_simplejwt.tokens import RefreshToken
 from auth import serializers
 
 # Create your views here.
 
 User = get_user_model()
 logger = logging.getLogger("account")
+
+def _get_tokens_for_user(user) -> dict:
+    refresh = RefreshToken.for_user(user)
+    return {"access": str(refresh.access_token),
+            "refresh": str(refresh),}
 
 _ERROR_400 = OpenApiResponse(response=OpenApiTypes.OBJECT,description="Validation error or bad request",
                              examples=[OpenApiExample("Validation Error",value={"status": "error", 
@@ -53,7 +59,8 @@ class UserRegistrationView(APIView):
                              status=status.HTTP_400_BAD_REQUEST,)
         user = User.objects.create_user(username=Username,password=Password,email=Email)
         user.save()
-        logger.info("Registration initiated for %s", Username)
+        tokens = _get_tokens_for_user(user)
+        logger.info("Account created for %s (@%s)", user.email, user.username)
         return Response({"status": "success",
                 "message": "Registration Completed.",
                 "data": {"Username": f"{Username}", "email": f"{Email}"}},
@@ -64,7 +71,8 @@ class UserLoginView(APIView):
                    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT,description="Login successful",
                                                    examples=[OpenApiExample("Success",value={"status": "success",
                                                           "message": "Login successful.",
-                                                          "data": {"user": {"id": 1, "email": "example@gmail.com", "username": "example_user"},},},)],),
+                                                          "data": {"user": {"id": 1, "email": "example@gmail.com", "username": "example_user"},
+                                                                   "tokens": {"access": "eyJ...", "refresh": "eyJ..."},},},)],),
             400: _ERROR_400,
             429: _ERROR_429,},
         tags=["Authentication"],
@@ -92,6 +100,7 @@ class UserLoginView(APIView):
                 {"status": "error", "message": f"Invalid credentials.",
                  "errors": {"password": ["Incorrect password."]}},
                 status=status.HTTP_400_BAD_REQUEST,)
+        tokens = _get_tokens_for_user(user)
         logger.info("User logged in: %s", user.email)
         return Response({"status": "success",
                          "message": "Login successful.",
