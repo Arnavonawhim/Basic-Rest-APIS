@@ -20,7 +20,7 @@ _ERROR_400 = OpenApiResponse(response=OpenApiTypes.OBJECT,description="Validatio
 
 _ERROR_429 = OpenApiResponse(response=OpenApiTypes.OBJECT,description="Rate limit exceeded or account locked",
                              examples=[OpenApiExample("Rate Limited",value={"status": "error", 
-                                                                            "message": "Account locked. Try again in 60 minute(s)."},)],)
+                                                                            "message": "Account locked."},)],)
 
 class UserRegistrationView(APIView):
     @extend_schema(request=serializers.UserRegistrationSerializer,
