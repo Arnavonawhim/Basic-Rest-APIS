@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Note</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 24px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: inline-block;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-remove {
+            background-color: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+        .btn-remove:hover {
+            background-color: #c82333;
+        }
+        .form-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+        }
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+        }
+        .current-image {
+            margin-bottom: 15px;
+        }
+        .current-image img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .current-image-actions {
+            margin-top: 10px;
+        }
+        .image-upload {
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #fafafa;
+        }
+        .image-upload:hover {
+            border-color: #007bff;
+            background-color: #f0f8ff;
+        }
+        .image-upload.dragover {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+        .image-upload-icon {
+            font-size: 48px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+        .image-upload-text {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .image-upload-hint {
+            font-size: 12px;
+            color: #999;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .image-preview {
+            margin-top: 15px;
+            display: none;
+        }
+        .image-preview img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .image-preview-actions {
+            margin-top: 10px;
+        }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        .messages {
+            margin-bottom: 20px;
+        }
+        .message {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Edit Note</h1>
+            <a href="{% url 'notes' %}" class="btn btn-secondary">Back to Notes</a>
+        </div>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="message {{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="form-container">
+            <form method="POST" enctype="multipart/form-data" id="noteForm">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="title">Title *</label>
+                    <input type="text" id="title" name="title" value="{{ note.title }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="content">Content *</label>
+                    <textarea id="content" name="content" required>{{ note.content }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Image</label>
+                    
+                    {% if note.image %}
+                    <div class="current-image" id="currentImage">
+                        <img src="{{ note.image.url }}" alt="{{ note.title }}">
+                        <div class="current-image-actions">
+                            <button type="button" class="btn btn-remove" id="removeCurrentImage">Remove Current Image</button>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="image-upload" id="imageUpload" {% if note.image %}style="display: none;"{% endif %}>
+                        <div class="image-upload-icon">📷</div>
+                        <div class="image-upload-text">Click to upload or drag and drop</div>
+                        <div class="image-upload-hint">PNG, JPG, GIF up to 10MB</div>
+                    </div>
+                    <input type="file" id="image" name="image" accept="image/*">
+                    <input type="hidden" id="removeImageFlag" name="remove_image" value="false">
+                    
+                    <div class="image-preview" id="imagePreview">
+                        <img id="previewImg" src="" alt="Preview">
+                        <div class="image-preview-actions">
+                            <button type="button" class="btn btn-remove" id="removeNewImage">Remove New Image</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Update Note</button>
+                    <a href="{% url 'notes' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const imageUpload = document.getElementById('imageUpload');
+        const imageInput = document.getElementById('image');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const removeNewImageBtn = document.getElementById('removeNewImage');
+        const removeCurrentImageBtn = document.getElementById('removeCurrentImage');
+        const currentImage = document.getElementById('currentImage');
+        const removeImageFlag = document.getElementById('removeImageFlag');
+
+        imageUpload.addEventListener('click', () => {
+            imageInput.click();
+        });
+
+        imageInput.addEventListener('change', handleImageSelect);
+
+        imageUpload.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            imageUpload.classList.add('dragover');
+        });
+
+        imageUpload.addEventListener('dragleave', () => {
+            imageUpload.classList.remove('dragover');
+        });
+
+        imageUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            imageUpload.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                imageInput.files = files;
+                handleImageSelect();
+            }
+        });
+
+        function handleImageSelect() {
+            const file = imageInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    imageUpload.style.display = 'none';
+                    if (currentImage) {
+                        currentImage.style.display = 'none';
+                    }
+                    removeImageFlag.value = 'false';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        removeNewImageBtn.addEventListener('click', () => {
+            imageInput.value = '';
+            imagePreview.style.display = 'none';
+            if (currentImage) {
+                currentImage.style.display = 'block';
+            } else {
+                imageUpload.style.display = 'block';
+            }
+        });
+
+        if (removeCurrentImageBtn) {
+            removeCurrentImageBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to remove this image?')) {
+                    currentImage.style.display = 'none';
+                    imageUpload.style.display = 'block';
+                    removeImageFlag.value = 'true';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
